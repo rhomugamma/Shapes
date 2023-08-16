@@ -31,45 +31,69 @@ float OmaxZ;
 
 class Model {
 
-private:
-    class Face {
-      public:
-        int edge;
-        int *vertices;
-        int *texcoords;
-        int normal;
+  private:
 
-        Face(int edge, int *vertices, int *texcoords, int normal = -1) {
-            this->edge = edge;
-            this->vertices = vertices;
-            this->texcoords = texcoords;
-            this->normal = normal;
-        }
-    };
-    std::vector<float *> vertices;
-    std::vector<float *> texcoords;
-    std::vector<float *> normals;
-    std::vector<Face> faces;
-    GLuint list;
+    class Face {
+      
+		public:
+        	
+			int edge;
+        	int *vertices;
+        	int *texcoords;
+        	int normal;
+
+        	Face(int edge, int *vertices, int *texcoords, int normal = -1) {
+            
+				this->edge = edge;
+            	this->vertices = vertices;
+            	this->texcoords = texcoords;
+            	this->normal = normal;
+        
+			}
+    
+	};
+    
+		std::vector<float *> vertices;
+    	std::vector<float *> texcoords;
+    	std::vector<float *> normals;
+    	std::vector<Face> faces;
+    	GLuint list;
+
   public:
-    void load(const char *filename) {
-        std::string line;
-        std::vector<std::string> lines;
-        std::ifstream in(filename);
-        if (!in.is_open()) {
-            printf("Cannot load model %s\n", filename);
-            return;
-        }
+
+		void load(const char *filename) {
+        
+			std::string line;
+        	std::vector<std::string> lines;
+        	std::ifstream in(filename);
+        
+			if (!in.is_open()) {
+		
+				std::cout << "Cannot load model " << filename << '\n';
+
+            	return;
+
+        	}
+
         while (!in.eof()) {
-            std::getline(in, line);
+        
+			std::getline(in , line);
             lines.push_back(line);
-        }
+        
+		}
+
         in.close();
-        float a, b, c;
-        for (std::string &line : lines) {
-            if (line[0] == 'v') {
-                if (line[1] == ' ') {
-                    sscanf(line.c_str(), "v %f %f %f", &a, &b, &c);
+        
+		float a, b, c;
+        
+		/* for (std::string &line : lines) { */
+		for (int i = 0; i < lines.size(); i++) {
+            
+			if (lines[i][0] == 'v') {
+                
+				if (lines[i][1] == ' ') {
+                    
+					sscanf(line.c_str(), "v %f %f %f", &a, &b, &c);
 
 					minX = std::min(minX, a);
     		        minY = std::min(minY, b);
@@ -79,30 +103,46 @@ private:
             		maxZ = std::max(maxZ, c);
 					OminX = 3.25 * minX;
 					OmaxX = 3.25 * maxX;
-					OminY =  4.75 * minY;
-					OmaxY =  4.75 * maxY;
+					OminY = 4.75 * minY;
+					OmaxY = 4.75 * maxY;
 					OminZ = 2.75 * minZ;
 					OmaxZ = 2.75 * maxZ;
 
-
                     vertices.push_back(new float[3]{a, b, c});
-                } else if (line[1] == 't') {
+
+                } 
+				
+				else if (lines[i][1] == 't') {
+
                     sscanf(line.c_str(), "vt %f %f", &a, &b);
                     texcoords.push_back(new float[2]{a, b});
-                } else {
-                    sscanf(line.c_str(), "vn %f %f %f", &a, &b, &c);
+
+                } 
+				
+				else {
+                
+					sscanf(line.c_str(), "vn %f %f %f", &a, &b, &c);
                     normals.push_back(new float[3]{a, b, c});
-                }
-            } else if (line[0] == 'f') {
-                int v0, v1, v2, t0, t1, t2, n;
-                sscanf(line.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d", &v0, &t0, &n, &v1, &t1, &n, &v2, &t2, &n);
+                
+				}
+
+            } 
+			
+			else if (lines[i][0] == 'f') {
+            
+				int v0, v1, v2, t0, t1, t2, n;
+                sscanf(lines[i].c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d", &v0, &t0, &n, &v1, &t1, &n, &v2, &t2, &n);
                 int *v = new int[3]{v0 - 1, v1 - 1, v2 - 1};
-                faces.push_back(Face(3, v, NULL, n - 1));
-            }
-        }
-        list = glGenLists(1);
+            	faces.push_back(Face(3, v, NULL, n - 1));
+            
+			}
+        
+		}
+        
+		list = glGenLists(1);
         glNewList(list, GL_COMPILE);
-        for (Face &face : faces) {
+        
+		for (Face &face : faces) {
             if (face.normal != -1)
                 glNormal3fv(normals[face.normal]);
             else
@@ -137,20 +177,13 @@ private:
 
 Model model;
 
-/* Camera Position X: 0 */
-/* Camera Position Y: 0 */
-/* Camera Position Z: -26 */
-/* Camera Rotation X: 76 */
-/* Camera Rotation Y: 0 */
-/* Camera Rotation Z: 40 */
-
 float cameraPositionX = OmaxX;  // Initial camera distance
 float cameraPositionY = OmaxY;
-float cameraPositionZ = OmaxZ;
+float cameraPositionZ = OminZ;
 
-float cameraRotationX = 76.0f;   // Initial camera rotation angle around X-axis
-float cameraRotationY = 0.0f;   // Initial camera rotation angle around Y-axis
-float cameraRotationZ = 40.0f;
+float cameraRotationX = 107.0f;   // Initial camera rotation angle around X-axis
+float cameraRotationY =   0.0f;   // Initial camera rotation angle around Y-axis
+float cameraRotationZ =  40.0f;
 float cameraSpeed = 1.0f;       // Camera movement speed
 float cameraRotationSpeed = 1.0f;
 
@@ -206,17 +239,31 @@ void specialFunc(int key, int x, int y) {
     switch (key) {
 
         case GLUT_KEY_UP:
-            cameraPositionY -= cameraSpeed;
-            break;
+            
+			cameraPositionY -= cameraSpeed;
+            
+			break;
+
+
         case GLUT_KEY_DOWN:
-            cameraPositionY += cameraSpeed;
-            break;
-        case GLUT_KEY_RIGHT:
-            cameraPositionZ -= cameraSpeed;
-            break;
-        case GLUT_KEY_LEFT:
+            
+			cameraPositionY += cameraSpeed;
+            
+			break;
+        
+
+		case GLUT_KEY_RIGHT:
+            
+			cameraPositionZ -= cameraSpeed;
+            
+			break;
+        
+
+		case GLUT_KEY_LEFT:
+
             cameraPositionZ += cameraSpeed;
-            break;
+            
+			break;
 
     }
 
@@ -375,7 +422,7 @@ void init() {
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(-20.0, 1.0, 1.0, 1000.0);
+    gluPerspective(20.0, 1.0, 1.0, 2000.0);
     glMatrixMode(GL_MODELVIEW);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -389,7 +436,7 @@ void init() {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
 	glEnable(GL_COLOR_MATERIAL);
 
-    model.load("Leviathan.obj");
+    model.load("snorkel.obj");
 
 }
 
@@ -405,41 +452,36 @@ void display() {
  	model.draw();
     glutSwapBuffers();
 
-	/* std::cout << "Camera Position X: " << cameraPositionX << '\n'; */
-	/* std::cout << "Camera Position Y: " << cameraPositionY << '\n'; */
-	/* std::cout << "Camera Position Z: " << cameraPositionZ << '\n'; */
-	/* std::cout << "Camera Rotation X: " << cameraRotationX << '\n'; */
-	/* std::cout << "Camera Rotation Y: " << cameraRotationY << '\n'; */
-	/* std::cout << "Camera Rotation Z: " << cameraRotationZ << '\n'; */
+	std::cout << maxX << '\n';
 
 }
 
 void mouseFunc(int button, int state, int x, int y) {
 
-    if (button == GLUT_LEFT_BUTTON) {
-    
-		if (state == GLUT_DOWN) {
-    
-			isMousePressed = true;
+	    if (button == GLUT_LEFT_BUTTON) {
+        if (state == GLUT_DOWN) {
+            isMousePressed = true;
             prevMouseX = x;
             prevMouseY = y;
+        } else if (state == GLUT_UP) {
+            isMousePressed = false;
+        }
+    }
     
-		} 
-		
-		else if (state == GLUT_UP) {
-    
-			isMousePressed = false;
-    
-		}
-    
-	}
-
 }
 
 void motionFunc(int x, int y) {
 
-    if (isMousePressed) {
+	    /* if (isMousePressed) { */
+        /* int deltaY = y - prevMouseY; */
+        /* prevMouseY = y; */
 
+        /* cameraPositionZ += static_cast<float>(deltaY) * 0.1f; */
+
+        /* glutPostRedisplay(); */
+    /* } */
+
+	    if (isMousePressed) {
         int deltaX = x - prevMouseX;
         int deltaY = y - prevMouseY;
         prevMouseX = x;
@@ -448,8 +490,15 @@ void motionFunc(int x, int y) {
         cameraRotationY += static_cast<float>(deltaX) * 0.2f;
         cameraRotationX += static_cast<float>(deltaY) * 0.2f;
 
-        glutPostRedisplay();
+        // Limit camera rotation to prevent flipping
+        if (cameraRotationX > 90.0f) {
+            cameraRotationX = 90.0f;
+        }
+        if (cameraRotationX < -90.0f) {
+            cameraRotationX = -90.0f;
+        }
 
+        glutPostRedisplay();
     }
 
 }
