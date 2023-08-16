@@ -1,4 +1,5 @@
-#include <GL/glut.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <cmath>
 
 const int WINDOW_WIDTH = 800;
@@ -7,13 +8,18 @@ const int WINDOW_HEIGHT = 600;
 float angle = 0.0f;
 
 void drawSphere(float radius, int slices, int stacks) {
-    for (int i = 0; i < slices; i++) {
+    
+	for (int i = 0; i < slices; i++) {
+
         float theta1 = static_cast<float>(i) * 2.0f * static_cast<float>(M_PI) / static_cast<float>(slices);
         float theta2 = static_cast<float>(i + 1) * 2.0f * static_cast<float>(M_PI) / static_cast<float>(slices);
 
         glBegin(GL_QUAD_STRIP);
-        for (int j = 0; j <= stacks; j++) {
-            float phi = static_cast<float>(j) * static_cast<float>(M_PI) / static_cast<float>(stacks);
+    
+		for (int j = 0; j <= stacks; j++) {
+    
+			float phi = static_cast<float>(j) * static_cast<float>(M_PI) / static_cast<float>(stacks);
+
             float x1 = radius * sinf(phi) * cosf(theta1);
             float y1 = radius * sinf(phi) * sinf(theta1);
             float z1 = radius * cosf(phi);
@@ -27,13 +33,18 @@ void drawSphere(float radius, int slices, int stacks) {
 
             glNormal3f(x2, y2, z2);
             glVertex3f(x2, y2, z2);
-        }
-        glEnd();
-    }
+    
+		}
+    
+		glEnd();
+    
+	}
+
 }
 
 void display() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -44,48 +55,66 @@ void display() {
     glColor3f(1.0f, 0.0f, 0.0f);
     drawSphere(1.0f, 50, 50);
 
-    glutSwapBuffers();
+    glfwSwapBuffers(glfwGetCurrentContext());
+
 }
 
-void reshape(int width, int height) {
-    glViewport(0, 0, width, height);
+void reshape(GLFWwindow* window, int width, int height) {
 
+	glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(45.0f, static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+
 }
 
 void idle() {
-    angle += 0.5f;
-    if (angle > 360.0f) {
-        angle -= 360.0f;
-    }
-    glutPostRedisplay();
+
+	angle += 0.5f;
+    
+	if (angle > 360.0f) {
+    
+		angle -= 360.0f;
+    
+	}
+    
+	glfwSwapBuffers(glfwGetCurrentContext());
+
 }
 
-int main(int argc, char** argv) {
+int main() {
 
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glEnable(GL_MULTISAMPLE);
-	glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
-	glutSetOption(GLUT_MULTISAMPLE, 8);
+	if (!glfwInit()) {
+        return -1;
+    }
 
-	int POS_X = (glutGet(GLUT_SCREEN_WIDTH) - WIDTH) >> 1;
-    int POS_Y = (glutGet(GLUT_SCREEN_HEIGHT) - HEIGHT) >> 1;
-    glutInitWindowPosition(POS_X, POS_Y);
-	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	glutCreateWindow("OpenGL Sphere");
+    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "OpenGL Sphere", NULL, NULL);
 
-	init();
+	if (!window) {
+
+		glfwTerminate();
+        return -1;
+
+	}
+
+    glfwMakeContextCurrent(window);
+
+    glewInit();
 
     glEnable(GL_DEPTH_TEST);
 
-    glutDisplayFunc(display);
-    glutReshapeFunc(reshape);
-    glutIdleFunc(idle);
+    glfwSetFramebufferSizeCallback(window, reshape);
 
-    glutMainLoop();
+    while (!glfwWindowShouldClose(window)) {
+
+		display();
+		glfwPollEvents();
+
+	}
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
     return 0;
+
 }
