@@ -31,114 +31,51 @@ float OmaxZ;
 
 class Model {
 
-private:
-    class Face {
-      public:
-        int edge;
-        int *vertices;
-        int *texcoords;
-        int normal;
+	public:
 
-        Face(int edge, int *vertices, int *texcoords, int normal = -1) {
-            this->edge = edge;
-            this->vertices = vertices;
-            this->texcoords = texcoords;
-            this->normal = normal;
-        }
-    };
-    std::vector<float *> vertices;
-    std::vector<float *> texcoords;
-    std::vector<float *> normals;
-    std::vector<Face> faces;
-    GLuint list;
-  public:
-    void load(const char *filename) {
-        std::string line;
-        std::vector<std::string> lines;
-        std::ifstream in(filename);
-        if (!in.is_open()) {
-            printf("Cannot load model %s\n", filename);
-            return;
-        }
-        while (!in.eof()) {
-            std::getline(in, line);
-            lines.push_back(line);
-        }
-        in.close();
-        float a, b, c;
-        for (std::string &line : lines) {
-            if (line[0] == 'v') {
-                if (line[1] == ' ') {
-                    sscanf(line.c_str(), "v %f %f %f", &a, &b, &c);
+		std::string filename;
+		GLfloat *normal;
+		GLfloat *face;
+		GLfloat *vertex;
+		std::vector<*normal> normals;
+		std::vector<*face> faces;
+		std::vector<*vertex> vertexs;
 
-					minX = std::min(minX, a);
-    		        minY = std::min(minY, b);
-    	    	    minZ = std::min(minZ, c);
-           			maxX = std::max(maxX, a);
-            		maxY = std::max(maxY, b);
-            		maxZ = std::max(maxZ, c);
-					OminX = 3.25 * minX;
-					OmaxX = 3.25 * maxX;
-					OminY =  4.75 * minY;
-					OmaxY =  4.75 * maxY;
-					OminZ = 2.75 * minZ;
-					OmaxZ = 2.75 * maxZ;
+		void obtainData() {
 
+			std::ifstream inputFile(filename);
+			std::string line;
+			/* std::istringstream lineStream(line); */
 
-                    vertices.push_back(new float[3]{a, b, c});
-                } else if (line[1] == 't') {
-                    sscanf(line.c_str(), "vt %f %f", &a, &b);
-                    texcoords.push_back(new float[2]{a, b});
-                } else {
-                    sscanf(line.c_str(), "vn %f %f %f", &a, &b, &c);
-                    normals.push_back(new float[3]{a, b, c});
-                }
-            } else if (line[0] == 'f') {
-                int v0, v1, v2, t0, t1, t2, n;
-                sscanf(line.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d", &v0, &t0, &n, &v1, &t1, &n, &v2, &t2, &n);
-                int *v = new int[3]{v0 - 1, v1 - 1, v2 - 1};
-                faces.push_back(Face(3, v, NULL, n - 1));
-            }
-        }
-        list = glGenLists(1);
-        glNewList(list, GL_COMPILE);
-        for (Face &face : faces) {
-            if (face.normal != -1)
-                glNormal3fv(normals[face.normal]);
-            else
-                glDisable(GL_LIGHTING);
-            glBegin(GL_POLYGON);
-            for (int i = 0; i < face.edge; i++)
-                glVertex3fv(vertices[face.vertices[i]]);
-            glEnd();
-            if (face.normal == -1)
-                glEnable(GL_LIGHTING);
-        }
+			std::string type;
 
-        glEndList();
-        
-		printf("Model: %s\n", filename);
-        printf("Vertices: %ld\n", vertices.size());
-        printf("Texcoords: %ld\n", texcoords.size());
-        printf("Normals: %ld\n", normals.size());
-        printf("Faces: %ld\n", faces.size());
-        
-		for (float *f : vertices)
-            delete f;
-        vertices.clear();
-        
-		for (float *f : texcoords)
-            delete f;
-        texcoords.clear();
-        
-		for (float *f : normals)
-            delete f;
-        normals.clear();
-		faces.clear();
-    
-	}
-    
-	void draw() { glCallList(list); }
+			while(std::getline(inputFile, line)) {
+
+				for (int i = 0; i < line.size(); i++) {
+
+					if (line[i] == 'v') {
+
+						std::cout << "vertex" << '\n';
+
+					}
+
+					if (line[i] == 'n') {
+
+						std::cout << "normal" << '\n';
+
+					}
+
+					if (line[i] == 'f') {
+
+						std::cout << "faces" << '\n';
+
+					}
+
+				}
+
+			}
+	
+		}
 
 };
 
@@ -397,7 +334,7 @@ void init() {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
 	glEnable(GL_COLOR_MATERIAL);
 
-    model.load("Leviathan.obj");
+    /* model.load("Leviathan.obj"); */
 
 }
 
@@ -410,7 +347,7 @@ void display() {
 	drawAxes();
 	drawModelBox();
 	drawOuterBox();
- 	model.draw();
+ 	/* model.draw(); */
     glutSwapBuffers();
 
 	/* std::cout << "Camera Position X: " << cameraPositionX << '\n'; */
