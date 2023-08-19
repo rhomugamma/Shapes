@@ -11,7 +11,6 @@
 #include <assimp/postprocess.h>
 
 
-
 float cameraYaw = -90.0f;   // Initialized to face along negative z-axis
 float cameraPitch = 0.0f;   // Initialized to zero
 float cameraSensitivity = 0.1f;
@@ -28,13 +27,172 @@ float cameraSpeed = 0.05f;
 
 bool isMousePressed = false;
 
+
+class Model {
+
+	public:
+	std::vector<float> vertices;
+    std::vector<unsigned int> indices;
+	std::string filename;
+	aiMesh* mesh;
+	GLuint VAO, VBO, EBO;
+	
+	void importModel() {
+
+		// Load the Leviathan.obj model using Assimp
+    	Assimp::Importer importer;
+    	const aiScene* scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
+
+    	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+    	
+			std::cerr << "Assimp error: " << importer.GetErrorString() << std::endl;
+    	
+		}
+
+    	mesh = scene->mMeshes[0];
+
+	}
+
+
+	void modelParametersCalculation() {	
+
+		if (!mesh) {
+
+			return;
+
+		}
+		
+		for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+			
+			vertices.push_back(mesh->mVertices[i].x);
+     	 	vertices.push_back(mesh->mVertices[i].y);
+        	vertices.push_back(mesh->mVertices[i].z);
+    	
+		}
+
+ 	   for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
+        
+	   	   	aiFace face = mesh->mFaces[i];
+        
+			for (unsigned int j = 0; j < face.mNumIndices; ++j) {
+        
+				indices.push_back(face.mIndices[j]);
+
+			}
+
+		}
+
+	}
+
+
+	void modelRender() {
+
+		GLuint VBO, VAO, EBO;
+    	glGenBuffers(1, &VBO);
+    	glGenVertexArrays(1, &VAO);
+    	glGenBuffers(1, &EBO);
+
+    	glBindVertexArray(VAO);
+    	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+    	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    	glEnableVertexAttribArray(0);
+
+	}
+
+
+	void modelDisplay(GLuint& shaderProgram, GLFWwindow*& window) {
+
+		glm::mat4 model = glm::mat4(1.0f);  
+		/* glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp); */
+		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
+	    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+
+    	GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+	    GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    	GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+
+    	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+		glBindVertexArray(VAO);
+	    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    	glfwSwapBuffers(window);
+
+	}
+
+
+	void cleanUp() {
+
+		glDeleteVertexArrays(1, &VAO);
+		glDeleteBuffers(1, &VBO);
+    	glDeleteBuffers(1, &EBO);
+
+	}
+
+};
+
+
+const char* vertexShaderSource = R"(
+
+	#version 330 core
+   	layout (location = 0) in vec3 aPos;
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
+    void main() { 
+
+	    gl_Position = projection * view * model * vec4(aPos, 1.0);
+ 
+   })";
+
+const char* fragmentShaderSource = R"(
+
+	#version 330 core
+    out vec4 FragColor;
+    void main() {
+            
+		FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    
+})";
+
+
+void init(Model& model) {
+	
+	model.importModel();
+	model.modelParametersCalculation();
+
+}
+
+void display(Model& model, GLuint& shaderProgram, GLFWwindow*& window) {
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	model.modelRender();
+	model.modelDisplay(shaderProgram, window);
+
+    glUseProgram(shaderProgram);
+
+	model.cleanUp();
+    	
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+
     glViewport(0, 0, width, height);
+
 }
 
 void processInput(GLFWwindow* window) {
 
-	    // Calculate delta time to smooth out camera movement
+	// Calculate delta time to smooth out camera movement
     static float lastFrame = 0.0f;
     float currentFrame = glfwGetTime();
     float deltaTime = currentFrame - lastFrame;
@@ -52,11 +210,11 @@ void processInput(GLFWwindow* window) {
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 
     // Mouse button event handling
-    /* if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) { */
-    /*     if (!isMousePressed) { */
-    /*         isMousePressed = true; */
-    /*         glfwGetCursorPos(window, &lastX, &lastY); */
-    /*     } */
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        if (!isMousePressed) {
+            isMousePressed = true;
+            glfwGetCursorPos(window, &lastX, &lastY);
+        }
 
         // Update yaw and pitch based on mouse input
         double xpos, ypos;
@@ -89,9 +247,12 @@ void processInput(GLFWwindow* window) {
         cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
         cameraUp = glm::normalize(glm::cross(cameraRight, cameraFront));
     } 
-		/* else { */
-        /* isMousePressed = false; */
-    /* } */
+
+	else {
+
+        isMousePressed = false;
+    
+	}
 
     /* if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) */
     /*     cameraPos += cameraSpeed * cameraFront; */
@@ -102,9 +263,17 @@ void processInput(GLFWwindow* window) {
     /* if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) */
     /*     cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed; */
 
+}
+
 
 int main() {
-    if (!glfwInit()) {
+
+	Model model;
+
+	model.filename = "Leviathan.obj";
+
+	if (!glfwInit()) {
+
         std::cerr << "GLFW initialization failed" << std::endl;
         return -1;
     }
@@ -131,66 +300,7 @@ int main() {
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    // Load the Leviathan.obj model using Assimp
-    Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile("Leviathan.obj", aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
-
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        std::cerr << "Assimp error: " << importer.GetErrorString() << std::endl;
-        return -1;
-    }
-
-    aiMesh* mesh = scene->mMeshes[0];
-
-    std::vector<float> vertices;
-    std::vector<unsigned int> indices;
-
-    for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
-        vertices.push_back(mesh->mVertices[i].x);
-        vertices.push_back(mesh->mVertices[i].y);
-        vertices.push_back(mesh->mVertices[i].z);
-    }
-
-    for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
-        aiFace face = mesh->mFaces[i];
-        for (unsigned int j = 0; j < face.mNumIndices; ++j) {
-            indices.push_back(face.mIndices[j]);
-        }
-    }
-
-    GLuint VBO, VAO, EBO;
-    glGenBuffers(1, &VBO);
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    const char* vertexShaderSource = R"(
-        #version 330 core
-        layout (location = 0) in vec3 aPos;
-        uniform mat4 model;
-        uniform mat4 view;
-        uniform mat4 projection;
-        void main() {
-            gl_Position = projection * view * model * vec4(aPos, 1.0);
-        }
-    )";
-
-    const char* fragmentShaderSource = R"(
-        #version 330 core
-        out vec4 FragColor;
-        void main() {
-            FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        }
-    )";
+	/* init(model); */
 
     GLuint vertexShader, fragmentShader;
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -215,40 +325,16 @@ int main() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+	init(model);
 
 	 while (!glfwWindowShouldClose(window)) {
-        processInput(window); // Handle camera movement
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glUseProgram(shaderProgram);
-
-        glm::mat4 model = glm::mat4(1.0f);
-        /* glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp); */
-		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-
-        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
-        GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-
-        glfwSwapBuffers(window);
+        /* processInput(window); // Handle camera movement */
+		/* display(model, shaderProgram, window); */
         glfwPollEvents();
-    }
+    
+	 }
 
-
-	     glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();
