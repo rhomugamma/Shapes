@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <string>
 #include <glm/glm.hpp>
 #include <fstream>
 #include <sstream>
@@ -69,7 +70,7 @@ class Model {
 		std::vector<float> vertexCoordinates;
 		std::vector<float> vertexNormals;
 		std::vector<float> textureCoordinates;
-		std::vector<unsigned int> faces;
+		std::vector<int> faces;
 		GLuint VAO;
 
 		void initModel() {
@@ -83,14 +84,26 @@ class Model {
     		
 			}
 
-		    
 			std::string line;
     		
 			while (std::getline(objFile, line)) {
 	
 				std::istringstream iss(line);
+
+				if (!objFile.is_open()) {
+        
+					std::cerr << "Failed to open obj file" << std::endl;
+        			return; // Make sure to exit the function if the file is not opened
+    			
+				}
         		
 				std::string type;
+
+				std::vector<std::string> data;
+
+				int firstS = 0;
+
+				/* std::cout << line << '\n'; */
 
 
 				for (int i = 0; i < line.size(); i++) {
@@ -98,15 +111,18 @@ class Model {
 					if (line[i] == ' ') {
 
 					    if (i >= 0 && i < line.length()) {
-        					
-							std::string type = line.substr(0, i);
-        						
-							std::cout << "Extracted substring: " << type << '\n';
 
-							break;
-    						
-						} 
+							std::string type = line.substr(firstS, i - firstS);
+
+							data.push_back(type);
 							
+							firstS = i + 1;
+
+							/* std::cout << type << '\n'; */
+
+						} 
+
+													
 						else {
 
 							std::cout << "Invalid position specified." << '\n';
@@ -115,99 +131,135 @@ class Model {
 
 					}
 
+					if (line[i] == '/') {
+
+						if (i >= 0 && i < line.length()) {
+
+							std::string type = line.substr(firstS, i - firstS);
+
+							data.push_back(type);
+							
+							firstS = i + 1;
+
+							/* std::cout << type << '\n'; */
+
+						} 
+
+													
+						else {
+
+							std::cout << "Invalid position specified." << '\n';
+    						
+						}			
+
+					}
+
+					if (i == line.size() - 1) {
+
+						if (i >= 0 && i < line.length()) {
+
+							std::string type = line.substr(firstS, line.length() - firstS);
+
+							data.push_back(type);
+							
+							firstS = i + 1;
+
+							/* std::cout << type << '\n'; */
+
+						} 
+
+													
+						else {
+
+							std::cout << "Invalid position specified." << '\n';
+    						
+						}
+
+					}
+					
 				}
 
         		
 				iss >> type;
 
-
 				if (type == "v") {
             	
-					float x, y, z;
-					iss >> x >> y >> z;
-
-					/* std::cout << x << '\n'; */
-					/* std::cout << y << '\n'; */
-					/* std::cout << z << '\n'; */
-
-					vertexCoordinates.push_back(x);
-					vertexCoordinates.push_back(y);
-					vertexCoordinates.push_back(z);
+					vertexCoordinates.push_back(std::stof(data[1]));
+					vertexCoordinates.push_back(std::stof(data[2]));
+					vertexCoordinates.push_back(std::stof(data[3]));
 
        			} 
 
 				if (type == "vn") {
 
-					float x, y, z;
-					iss >> x >> y >> z;
-
-					/* std::cout << x << '\n'; */
-					/* std::cout << y << '\n'; */
-					/* std::cout << z << '\n'; */
-			
-					vertexNormals.push_back(x);
-					vertexNormals.push_back(y);
-					vertexNormals.push_back(z);
+					vertexNormals.push_back(std::stof(data[1]));
+					vertexNormals.push_back(std::stof(data[2]));
+					vertexNormals.push_back(std::stof(data[3]));
 
 				}
 
 				if (type == "vt") {
 
-					float x, y, z;
-					iss >> x >> y >> z;
-
-					/* std::cout << x << '\n'; */
-					/* std::cout << y << '\n'; */
-					/* std::cout << z << '\n'; */
-
-					textureCoordinates.push_back(x);
-					textureCoordinates.push_back(y);
-					textureCoordinates.push_back(z);
+					textureCoordinates.push_back(std::stof(data[1]));
+					textureCoordinates.push_back(std::stof(data[2]));
+					textureCoordinates.push_back(std::stof(data[3]));
 
 				}
 			
 				if (type == "f") {
 
-					unsigned int v1, v2, v3;
-            
-					iss >> v1 >> v2 >> v3;
-            
-					faces.push_back(v1 - 1); // OBJ indices are 1-based
-					faces.push_back(v2 - 1);
-					faces.push_back(v3 - 1);
-
-					/* std::cout << v1 << '\n'; */
-					/* std::cout << v2 << '\n'; */
-					/* std::cout << v3 << '\n'; */
+					faces.push_back(std::stoi(data[1]) - 1); // OBJ indices are 1-based
+					faces.push_back(std::stoi(data[2]) - 1);
+					faces.push_back(std::stoi(data[3]));
+					faces.push_back(std::stoi(data[4]));
+					faces.push_back(std::stoi(data[5]));
+					faces.push_back(std::stoi(data[6]));
+					faces.push_back(std::stoi(data[7]));
+					faces.push_back(std::stoi(data[8]));
+					faces.push_back(std::stoi(data[9]));
 
 				}
-    		
-			}
 	
+			}
+
 		}
 	
 
 		void renderModel() {
 
-			// Create vertex and index buffers
-    		GLuint VAO, VBO, EBO;
-    		glGenVertexArrays(1, &VAO);
-    		glGenBuffers(1, &VBO);
-    		glGenBuffers(1, &EBO);
+		    glGenVertexArrays(1, &VAO);
+    	    glBindVertexArray(VAO);
 
-    		glBindVertexArray(VAO);
+	        GLuint vertexCoordinatesVBO;
+        	glGenBuffers(1, &vertexCoordinatesVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, vertexCoordinatesVBO);
+        	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCoordinates.size(), vertexCoordinates.data(), GL_STATIC_DRAW);
+        	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
+	        glEnableVertexAttribArray(0);
+			
+			GLuint vertexNormalsVBO;
+        	glGenBuffers(1, &vertexNormalsVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, vertexNormalsVBO);
+        	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexNormals.size(), vertexNormals.data(), GL_STATIC_DRAW);
+       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+     	   	glEnableVertexAttribArray(1);
 
-   			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    		glBufferData(GL_ARRAY_BUFFER, vertexCoordinates.size() * sizeof(float), &vertexCoordinates[0], GL_STATIC_DRAW);
+			GLuint textureCoordinatesVBO;
+        	glGenBuffers(1, &textureCoordinatesVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, textureCoordinatesVBO);
+        	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * textureCoordinates.size(), textureCoordinates.data(), GL_STATIC_DRAW);
+       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+     	   	glEnableVertexAttribArray(1);
 
-    		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    		glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces.size() * sizeof(unsigned int), &faces[0], GL_STATIC_DRAW);
+			GLuint facesVBO;
+        	glGenBuffers(1, &facesVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, facesVBO);
+        	glBufferData(GL_ARRAY_BUFFER, sizeof(int) * faces.size(), faces.data(), GL_STATIC_DRAW);
+       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+     	   	glEnableVertexAttribArray(1);
 
-    		glEnableVertexAttribArray(0);
-    		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
+        	glBindVertexArray(0);
 
-    		glBindBuffer(GL_ARRAY_BUFFER, 0);
-    		glBindVertexArray(0);
 
 		}
 
