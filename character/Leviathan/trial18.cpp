@@ -7,16 +7,12 @@
 #include <glm/glm.hpp>
 #include <fstream>
 #include <sstream>
-/* #include <glm/gtc/matrix_transform.hpp> */
 #include <glm/gtc/type_ptr.hpp>
-/* #include <assimp/Importer.hpp> */
-/* #include <assimp/scene.h> */
-/* #include <assimp/postprocess.h> */
 
 
 const char* vertexShaderSource = R"(
 
-	#version 330 core
+	#version 450 core
     layout (location = 0) in vec3 aPos;
     uniform mat4 model;
     uniform mat4 view;
@@ -33,12 +29,12 @@ const char* vertexShaderSource = R"(
 
 const char* fragmentShaderSource = R"(
 
-	#version 330 core
+	#version 450 core
     out vec4 FragColor;
 
     void main() {
 
-		FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+		FragColor = vec4(1.0, 1.0, 1.0, 1.0);
 
 	}
 
@@ -68,9 +64,11 @@ class Model {
 
 		std::string filename;
 		std::vector<float> vertexCoordinates;
-		std::vector<float> vertexNormals;
+		std::vector<float> normalCoordinates;
 		std::vector<float> textureCoordinates;
-		std::vector<int> faces;
+		std::vector<unsigned int> vertexIndices;
+		std::vector<unsigned int> normalIndices;
+		std::vector<unsigned int> textureIndices;
 		GLuint VAO;
 
 		void initModel() {
@@ -80,7 +78,7 @@ class Model {
     		
 			if (!objFile.is_open()) {
         	
-				std::cerr << "Failed to open obj file" << std::endl;
+				std::cerr << "Failed to open obj file" << "\n";
     		
 			}
 
@@ -92,7 +90,7 @@ class Model {
 
 				if (!objFile.is_open()) {
         
-					std::cerr << "Failed to open obj file" << std::endl;
+					std::cerr << "Failed to open obj file" << "\n";
         			return; // Make sure to exit the function if the file is not opened
     			
 				}
@@ -192,9 +190,9 @@ class Model {
 
 				if (type == "vn") {
 
-					vertexNormals.push_back(std::stof(data[1]));
-					vertexNormals.push_back(std::stof(data[2]));
-					vertexNormals.push_back(std::stof(data[3]));
+					normalCoordinates.push_back(std::stof(data[1]));
+					normalCoordinates.push_back(std::stof(data[2]));
+					normalCoordinates.push_back(std::stof(data[3]));
 
 				}
 
@@ -208,15 +206,13 @@ class Model {
 			
 				if (type == "f") {
 
-					faces.push_back(std::stoi(data[1]) - 1); // OBJ indices are 1-based
-					faces.push_back(std::stoi(data[2]) - 1);
-					faces.push_back(std::stoi(data[3]));
-					faces.push_back(std::stoi(data[4]));
-					faces.push_back(std::stoi(data[5]));
-					faces.push_back(std::stoi(data[6]));
-					faces.push_back(std::stoi(data[7]));
-					faces.push_back(std::stoi(data[8]));
-					faces.push_back(std::stoi(data[9]));
+					for (int i = 1; i < data.size(); i += 3) {
+
+						vertexIndices.push_back(std::stoul(data[i]) - 1);
+						normalIndices.push_back(std::stoul(data[i + 1]) - 1);
+						textureIndices.push_back(std::stoul(data[i + 2]) - 1);
+
+					}
 
 				}
 	
@@ -230,44 +226,52 @@ class Model {
 		    glGenVertexArrays(1, &VAO);
     	    glBindVertexArray(VAO);
 
-	        GLuint vertexCoordinatesVBO;
-        	glGenBuffers(1, &vertexCoordinatesVBO);
-        	glBindBuffer(GL_ARRAY_BUFFER, vertexCoordinatesVBO);
-        	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCoordinates.size(), vertexCoordinates.data(), GL_STATIC_DRAW);
-        	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
-	        glEnableVertexAttribArray(0);
+			GLuint vertexCoordinatesVBO;
+			glGenBuffers(1, &vertexCoordinatesVBO);
+			glBindBuffer(GL_ARRAY_BUFFER, vertexCoordinatesVBO);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCoordinates.size(), vertexCoordinates.data(), GL_STATIC_DRAW);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+			glEnableVertexAttribArray(0);
+
+			GLuint normalCoordinatesVBO;
+			glGenBuffers(1, &normalCoordinatesVBO);
+			glBindBuffer(GL_ARRAY_BUFFER, normalCoordinatesVBO);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(float) * normalCoordinates.size(), normalCoordinates.data(), GL_STATIC_DRAW);
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+			glEnableVertexAttribArray(1);
+	
+		    GLuint textureCoordinatesVBO;
+		    glGenBuffers(1, &textureCoordinatesVBO);
+		    glBindBuffer(GL_ARRAY_BUFFER, textureCoordinatesVBO);
+		    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * textureCoordinates.size(), textureCoordinates.data(), GL_STATIC_DRAW);
+		    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
+		    glEnableVertexAttribArray(2);
+
+			GLuint vertexIndicesEBO;
+			glGenBuffers(1, &vertexIndicesEBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexIndicesEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
+
+			GLuint normalIndicesEBO;
+			glGenBuffers(1, &normalIndicesEBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, normalIndicesEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * normalIndices.size(), normalIndices.data(), GL_STATIC_DRAW);
+
+			GLuint textureIndicesEBO;
+			glGenBuffers(1, &textureIndicesEBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textureIndicesEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * textureIndices.size(), textureIndices.data(), GL_STATIC_DRAW);
 			
-			GLuint vertexNormalsVBO;
-        	glGenBuffers(1, &vertexNormalsVBO);
-        	glBindBuffer(GL_ARRAY_BUFFER, vertexNormalsVBO);
-        	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexNormals.size(), vertexNormals.data(), GL_STATIC_DRAW);
-       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-     	   	glEnableVertexAttribArray(1);
-
-			GLuint textureCoordinatesVBO;
-        	glGenBuffers(1, &textureCoordinatesVBO);
-        	glBindBuffer(GL_ARRAY_BUFFER, textureCoordinatesVBO);
-        	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * textureCoordinates.size(), textureCoordinates.data(), GL_STATIC_DRAW);
-       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-     	   	glEnableVertexAttribArray(1);
-
-			GLuint facesVBO;
-        	glGenBuffers(1, &facesVBO);
-        	glBindBuffer(GL_ARRAY_BUFFER, facesVBO);
-        	glBufferData(GL_ARRAY_BUFFER, sizeof(int) * faces.size(), faces.data(), GL_STATIC_DRAW);
-       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-     	   	glEnableVertexAttribArray(1);
-
         	glBindVertexArray(0);
-
 
 		}
 
 
 		void displayModel() {
 
+			renderModel();
 			glBindVertexArray(VAO);
-        	glDrawElements(GL_TRIANGLES, faces.size(), GL_UNSIGNED_INT, 0);
+        	glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, 0);
         	glBindVertexArray(0);
 
 		}
@@ -287,6 +291,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 
 }
+
 
 void processInput(GLFWwindow* window) {
 
@@ -354,6 +359,7 @@ void processInput(GLFWwindow* window) {
 
 }
 
+
 void drawAxis() {
 
 	glBegin(GL_LINES);
@@ -396,11 +402,9 @@ void display(Model& model, GLuint& shaderProgram, GLFWwindow*& window) {
 
     glUseProgram(shaderProgram);
 
-	model.renderModel();
-	model.displayModel();
-	model.cleanUpModel();
-
 	drawAxis();
+
+	model.displayModel();
 
 	glm::mat4 modelView = glm::mat4(1.0f);
     glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
@@ -413,6 +417,8 @@ void display(Model& model, GLuint& shaderProgram, GLFWwindow*& window) {
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelView));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+	model.cleanUpModel();
 
 	glfwSwapBuffers(window);
 
@@ -488,6 +494,8 @@ int main() {
         glfwPollEvents();
 
     }
+
+	glfwTerminate();
 
     return 0;
 
