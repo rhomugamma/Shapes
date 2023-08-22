@@ -12,7 +12,7 @@
 
 
 
-float cameraYaw = -90.0f;   // Initialized to face along negative z-axis
+float cameraYaw = -0.0f;   // Initialized to face along negative z-axis
 float cameraPitch = 0.0f;   // Initialized to zero
 float cameraSensitivity = 0.1f;
 
@@ -20,8 +20,8 @@ double lastX = 400.0f;
 double lastY = 300.0f;
 
 // Define camera properties
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraPos = glm::vec3(20.0f, 0.0f, 0.0f);
+glm::vec3 cameraFront = glm::vec3(-20.0f, 0.0f, -0.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 cameraRight = glm::vec3(0.0f); // Add this line
 float cameraSpeed = 0.05f;
@@ -88,7 +88,8 @@ void processInput(GLFWwindow* window) {
         cameraFront = glm::normalize(front);
         cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
         cameraUp = glm::normalize(glm::cross(cameraRight, cameraFront));
-    } else {
+    } 
+	else {
         isMousePressed = false;
     }
 
@@ -216,6 +217,7 @@ int main() {
 
 
 	 while (!glfwWindowShouldClose(window)) {
+
         processInput(window); // Handle camera movement
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -242,10 +244,10 @@ int main() {
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
     }
 
-
-	     glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
