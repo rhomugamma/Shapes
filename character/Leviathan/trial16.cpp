@@ -86,6 +86,7 @@ int main() {
             iss >> index1 >> index2 >> index3;
             // Assuming indices are 1-based, adjust to 0-based
             indices.push_back(index1 - 1);
+			std::cout << index1 << '\n';
             indices.push_back(index2 - 1);
             indices.push_back(index3 - 1);
         }
