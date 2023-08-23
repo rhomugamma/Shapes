@@ -211,9 +211,15 @@ class Model {
 
 					for (int i = 1; i < data.size(); i += 3) {
 
+						/* std::cout << data[i] << '\n'; */
+						/* std::cout << data[i + 1] << '\n'; */
+						/* std::cout << data[i + 2] << '\n'; */
+
 						vertexIndices.push_back(std::stoul(data[i]) - 1);
 						normalIndices.push_back(std::stoul(data[i + 1]) - 1);
 						textureIndices.push_back(std::stoul(data[i + 2]) - 1);
+
+						/* std::cout << "--" << '\n'; */
 
 					}
 
@@ -233,12 +239,12 @@ class Model {
 
 			glBindVertexArray(vertexVAO);
 			glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-			glBufferData(GL_ARRAY_BUFFER, vertexCoordinates.size() * sizeof(float), vertexCoordinates.data(), GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, vertexCoordinates.size() * sizeof(glm::vec3), vertexCoordinates.data(), GL_STATIC_DRAW);
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexEBO);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertexIndices.size() * sizeof(unsigned int), vertexIndices.data(), GL_STATIC_DRAW);
 
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 			glEnableVertexAttribArray(0);
 
 
@@ -415,6 +421,7 @@ void processInput(GLFWwindow* window) {
         cameraFront = glm::normalize(front);
         cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
         cameraUp = glm::normalize(glm::cross(cameraRight, cameraFront));
+
     } 
 	
 	else {
@@ -491,8 +498,6 @@ int main() {
 
 	model.filename = "Leviathan.obj";
 
-	init(model);
-
     if (!glfwInit()) {
         std::cerr << "GLFW initialization failed" << std::endl;
         return -1;
@@ -546,6 +551,8 @@ int main() {
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+
+	init(model);
 	
 	while (!glfwWindowShouldClose(window)) {
 
