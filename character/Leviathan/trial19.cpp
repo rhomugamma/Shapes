@@ -14,14 +14,14 @@ const char* vertexShaderSource = R"(
 
 	#version 450 core
     layout (location = 0) in vec3 aPos;
-    /* uniform mat4 model; */
-    uniform mat4 modelView;
+	uniform mat4 view;
+	uniform mat4 modelView;
     uniform mat4 projection;
 
     void main() {
     
-        gl_Position = projection * modelView * vec4(aPos, 1.0);
-    
+       	gl_Position = view * projection * modelView * vec4(aPos, 1.0);
+
 	}
 
 )";
@@ -64,11 +64,11 @@ class Model {
 
 		std::string filename;
 		std::vector<glm::vec3> vertexCoordinates;
-		std::vector<float> normalCoordinates;
-		std::vector<float> textureCoordinates;
-		std::vector<unsigned int> vertexIndices;
-		std::vector<unsigned int> normalIndices;
-		std::vector<unsigned int> textureIndices;
+		std::vector<glm::vec3> normalCoordinates;
+		std::vector<glm::vec3> textureCoordinates;
+		std::vector<GLuint> vertexIndices;
+		std::vector<GLuint> normalIndices;
+		std::vector<GLuint> textureIndices;
 		GLuint vertexVBO, vertexVAO, vertexEBO, normalVBO, normalVAO, normalEBO, textureVBO, textureVAO, textureEBO;
 
 		void initModel() {
@@ -193,17 +193,25 @@ class Model {
 
 				if (type == "vn") {
 
-					normalCoordinates.push_back(std::stof(data[1]));
-					normalCoordinates.push_back(std::stof(data[2]));
-					normalCoordinates.push_back(std::stof(data[3]));
+					glm::vec3 normal;
+            		
+					normal.x = std::stof(data[1]);
+					normal.y = std::stof(data[2]);
+					normal.z = std::stof(data[3]);
+
+					normalCoordinates.push_back(normal);
 
 				}
 
 				if (type == "vt") {
 
-					textureCoordinates.push_back(std::stof(data[1]));
-					textureCoordinates.push_back(std::stof(data[2]));
-					textureCoordinates.push_back(std::stof(data[3]));
+					glm::vec3 texture;
+            		
+					texture.x = std::stof(data[1]);
+					texture.y = std::stof(data[2]);
+					texture.z = std::stof(data[3]);
+
+					textureCoordinates.push_back(texture);
 
 				}
 			
@@ -231,7 +239,7 @@ class Model {
 	
 
 		void renderModel() {
-			
+
 		    glGenVertexArrays(1, &vertexVAO);
 			glGenBuffers(1, &vertexVBO);
 			glGenBuffers(1, &vertexEBO);
@@ -242,78 +250,42 @@ class Model {
 			glBufferData(GL_ARRAY_BUFFER, vertexCoordinates.size() * sizeof(glm::vec3), vertexCoordinates.data(), GL_STATIC_DRAW);
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertexIndices.size() * sizeof(unsigned int), vertexIndices.data(), GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertexIndices.size() * sizeof(GLuint), vertexIndices.data(), GL_STATIC_DRAW);
 
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat), (void*)0);
 			glEnableVertexAttribArray(0);
 
 
-			/* glGenVertexArrays(1, &normalVAO); */
-			/* glGenBuffers(1, &normalVBO); */
-			/* glGenBuffers(1, &normalEBO); */
-    	    /* /1* glBindVertexArray(VAO); *1/ */
+			glGenVertexArrays(1, &normalVAO);
+			glGenBuffers(1, &normalVBO);
+			glGenBuffers(1, &normalEBO);
+    	    /* glBindVertexArray(VAO); */
 
-			/* glBindVertexArray(normalVAO); */
-			/* glBindBuffer(GL_ARRAY_BUFFER, normalVBO); */
-			/* glBufferData(GL_ARRAY_BUFFER, normalCoordinates.size() * sizeof(float), normalCoordinates.data(), GL_STATIC_DRAW); */
+			glBindVertexArray(normalVAO);
+			glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+			glBufferData(GL_ARRAY_BUFFER, normalCoordinates.size() * sizeof(glm::vec3), normalCoordinates.data(), GL_STATIC_DRAW);
 
-			/* glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, normalEBO); */
-			/* glBufferData(GL_ELEMENT_ARRAY_BUFFER, normalIndices.size() * sizeof(unsigned int), normalIndices.data(), GL_STATIC_DRAW); */
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, normalEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, normalIndices.size() * sizeof(GLuint), normalIndices.data(), GL_STATIC_DRAW);
 
-			/* glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); */
-			/* glEnableVertexAttribArray(1); */
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+			glEnableVertexAttribArray(1);
 
 
-			/* glGenVertexArrays(1, &textureVAO); */
-			/* glGenBuffers(1, &textureVBO); */
-			/* glGenBuffers(1, &textureEBO); */
-    	    /* /1* glBindVertexArray(VAO); *1/ */
+			glGenVertexArrays(1, &textureVAO);
+			glGenBuffers(1, &textureVBO);
+			glGenBuffers(1, &textureEBO);
+    	    /* glBindVertexArray(VAO); */
 
-			/* glBindVertexArray(textureVAO); */
-			/* glBindBuffer(GL_ARRAY_BUFFER, textureVBO); */
-			/* glBufferData(GL_ARRAY_BUFFER, textureCoordinates.size() * sizeof(float), textureCoordinates.data(), GL_STATIC_DRAW); */
+			glBindVertexArray(textureVAO);
+			glBindBuffer(GL_ARRAY_BUFFER, textureVBO);
+			glBufferData(GL_ARRAY_BUFFER, textureCoordinates.size() * sizeof(glm::vec3), textureCoordinates.data(), GL_STATIC_DRAW);
 
-			/* glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textureEBO); */
-			/* glBufferData(GL_ELEMENT_ARRAY_BUFFER, textureIndices.size() * sizeof(unsigned int), textureIndices.data(), GL_STATIC_DRAW); */
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textureEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, textureIndices.size() * sizeof(GLuint), textureIndices.data(), GL_STATIC_DRAW);
 
-			/* glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); */
-			/* glEnableVertexAttribArray(2); */
-
-			/* GLuint vertexCoordinatesVBO; */
-			/* glGenBuffers(1, &vertexCoordinatesVBO); */
-			/* glBindBuffer(GL_ARRAY_BUFFER, vertexCoordinatesVBO); */
-			/* glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCoordinates.size(), vertexCoordinates.data(), GL_STATIC_DRAW); */
-			/* glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0); */
-			/* glEnableVertexAttribArray(0); */
-
-			/* GLuint normalCoordinatesVBO; */
-			/* glGenBuffers(1, &normalCoordinatesVBO); */
-			/* glBindBuffer(GL_ARRAY_BUFFER, normalCoordinatesVBO); */
-			/* glBufferData(GL_ARRAY_BUFFER, sizeof(float) * normalCoordinates.size(), normalCoordinates.data(), GL_STATIC_DRAW); */
-			/* glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0); */
-			/* glEnableVertexAttribArray(1); */
-	
-		    /* GLuint textureCoordinatesVBO; */
-		    /* glGenBuffers(1, &textureCoordinatesVBO); */
-		    /* glBindBuffer(GL_ARRAY_BUFFER, textureCoordinatesVBO); */
-		    /* glBufferData(GL_ARRAY_BUFFER, sizeof(float) * textureCoordinates.size(), textureCoordinates.data(), GL_STATIC_DRAW); */
-		    /* glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0); */
-		    /* glEnableVertexAttribArray(2); */
-
-			/* GLuint vertexIndicesEBO; */
-			/* glGenBuffers(1, &vertexIndicesEBO); */
-			/* glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexIndicesEBO); */
-			/* glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW); */
-
-			/* GLuint normalIndicesEBO; */
-			/* glGenBuffers(1, &normalIndicesEBO); */
-			/* glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, normalIndicesEBO); */
-			/* glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * normalIndices.size(), normalIndices.data(), GL_STATIC_DRAW); */
-
-			/* GLuint textureIndicesEBO; */
-			/* glGenBuffers(1, &textureIndicesEBO); */
-			/* glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textureIndicesEBO); */
-			/* glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * textureIndices.size(), textureIndices.data(), GL_STATIC_DRAW); */
+			glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+			glEnableVertexAttribArray(2);
 			
         	glBindVertexArray(0);
 
@@ -328,13 +300,13 @@ class Model {
         	glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, 0);
         	glBindVertexArray(0);
 
-			/* glBindVertexArray(normalVAO); */
-        	/* glDrawElements(GL_TRIANGLES, normalIndices.size(), GL_UNSIGNED_INT, 0); */
-        	/* glBindVertexArray(0); */
+			glBindVertexArray(normalVAO);
+        	glDrawElements(GL_TRIANGLES, normalIndices.size(), GL_UNSIGNED_INT, 0);
+        	glBindVertexArray(0);
 
-			/* glBindVertexArray(textureVAO); */
-        	/* glDrawElements(GL_TRIANGLES, textureIndices.size(), GL_UNSIGNED_INT, 0); */
-        	/* glBindVertexArray(0); */
+			glBindVertexArray(textureVAO);
+        	glDrawElements(GL_TRIANGLES, textureIndices.size(), GL_UNSIGNED_INT, 0);
+        	glBindVertexArray(0);
 
 		}
 
@@ -345,13 +317,20 @@ class Model {
 			glDeleteVertexArrays(1, &vertexVAO);
 			glDeleteBuffers(1, &vertexEBO);
 
-			/* glDeleteBuffers(1, &normalVBO); */
-			/* glDeleteVertexArrays(1, &normalVAO); */
-			/* glDeleteBuffers(1, &normalEBO); */
+			glDeleteBuffers(1, &normalVBO);
+			glDeleteVertexArrays(1, &normalVAO);
+			glDeleteBuffers(1, &normalEBO);
 
-			/* glDeleteBuffers(1, &textureVBO); */
-			/* glDeleteVertexArrays(1, &textureVAO); */
-			/* glDeleteBuffers(1, &textureEBO); */
+			glDeleteBuffers(1, &textureVBO);
+			glDeleteVertexArrays(1, &textureVAO);
+			glDeleteBuffers(1, &textureEBO);
+
+			for (int i = 0; i < vertexCoordinates.size(); ++i) {
+        
+				const glm::vec3& vertex = vertexCoordinates[i];
+        		std::cout << "Element " << i << ": X: " << vertex.x << ", Y: " << vertex.y << ", Z: " << vertex.z << std::endl;
+    	
+			}
 
 		}
 
@@ -373,7 +352,7 @@ void processInput(GLFWwindow* window) {
     float deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
-    float cameraSpeed = 2.5f * deltaTime;
+    cameraSpeed = 2.5f * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         cameraPos += cameraSpeed * cameraFront;
@@ -485,7 +464,7 @@ void display(Model& model, GLuint& shaderProgram, GLFWwindow*& window) {
 
 	model.displayModel();
 
-	/* displayAxis(); */
+	displayAxis();
 	
 	glfwSwapBuffers(window);
 	
