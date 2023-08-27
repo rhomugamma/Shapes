@@ -11,26 +11,14 @@
 #include <assimp/postprocess.h>
 
 
-float cameraYaw = -0.0f;   // Initialized to face along negative z-axis
-float cameraPitch = 0.0f;   // Initialized to zero
 float cameraSensitivity = 0.1f;
-
 double lastX = 400.0f;
 double lastY = 300.0f;
-
-double lastMouseX = 800.0 / 2.0;
-double lastMouseY = 600.0 / 2.0;
-bool firstMouse = true;
-
-
-// Define camera properties
-glm::vec3 cameraPos = glm::vec3(20.0f, 20.0f, 20.0f);
-glm::vec3 cameraFront = glm::vec3(-20.0f, -20.0f, -20.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-glm::vec3 cameraRight = glm::vec3(0.0f);
 float cameraSpeed = 0.05f;
-
 bool isMousePressed = false;
+double lastMouseX = 0.0; // Initial X position of the mouse (center of the window)
+double lastMouseY = 0.0; // Initial Y position of the mouse (center of the window)
+bool mouseButtonPressed = false;
 
 
 const char* vertexShaderSource = R"(
@@ -38,13 +26,13 @@ const char* vertexShaderSource = R"(
 	#version 450 core
         
 	layout (location = 0) in vec3 aPos;
-	layout (location = 1) in vec3 aColor;
+	layout (location = 1) in vec4 aColor;
         
 	uniform mat4 model;
     uniform mat4 view;
     uniform mat4 projection;
 
-	out vec3 FragColor;
+	out vec4 FragColor;
 
 	void main() {
  	
@@ -59,13 +47,13 @@ const char* fragmentShaderSource = R"(
 
 	#version 450 core
 
-	in vec3 FragColor;
+	in vec4 FragColor;
     
     out vec4 FragColorOutput;
 
     void main() {
     
-        FragColorOutput = vec4(FragColor, 1.0);
+        FragColorOutput = vec4(FragColor);
 
 	}
     
@@ -149,6 +137,7 @@ class Model {
 				color.push_back(1.0);
 				color.push_back(1.0); 
 				color.push_back(1.0);
+				color.push_back(1.0);
    
    			}
 
@@ -182,7 +171,7 @@ class Model {
     		glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
     		glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(float), color.data(), GL_STATIC_DRAW);
 
-       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
      	   	glEnableVertexAttribArray(1);
 
 			glBindVertexArray(0);
@@ -229,16 +218,16 @@ class Axis {
 
 		};
 
-		GLfloat colorAxis[18] {
+		GLfloat colorAxis[24] {
 
-			1.0f, 0.0f, 0.0f,
-			1.0f, 0.0f, 0.0f,
+			1.0f, 0.0f, 0.0f, 1.0f,
+			1.0f, 0.0f, 0.0f, 1.0f,
 
-			0.0f, 1.0f, 0.0f,
-			0.0f, 1.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 1.0f,
+			0.0f, 1.0f, 0.0f, 1.0f,
 
-			0.0f, 0.0f, 1.0f,
-			0.0f, 0.0f, 1.0f,
+			0.0f, 0.0f, 1.0f, 1.0f,
+			0.0f, 0.0f, 1.0f, 1.0f
 
 		};
 
@@ -259,7 +248,7 @@ class Axis {
         	glGenBuffers(1, &colorVBO);
         	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
         	glBufferData(GL_ARRAY_BUFFER, sizeof(colorAxis), colorAxis, GL_STATIC_DRAW);
-       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
      	   	glEnableVertexAttribArray(1);
 
         	glBindVertexArray(0);
@@ -400,6 +389,7 @@ class ModelBox {
 				color.push_back(1.0);
 				color.push_back(0.6);
 				color.push_back(0.1);
+				color.push_back(1.0);
 
 			}
 
@@ -415,7 +405,7 @@ class ModelBox {
         	glGenBuffers(1, &colorVBO);
         	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
         	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(float), color.data(), GL_STATIC_DRAW);
-       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
+       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (GLvoid*)0);
      	   	glEnableVertexAttribArray(1);
 
         	glBindVertexArray(0);
@@ -445,6 +435,77 @@ class ModelBox {
 };
 
 
+class SimBox {
+
+	public: 
+
+		std::vector<float> vertex;
+		std::vector<float> color;
+		int increment = 3;
+		GLuint vertexVAO, vertexVBO, colorVAO, colorVBO;
+		float minX, maxX, minY, maxY, minZ, maxZ;
+
+
+		void initSimBox(Model& modelObject, ModelBox& modelBox) {
+
+			for (int i = 0; i < modelBox.vertex.size(); i++) {
+
+				vertex.push_back(increment * modelBox.vertex[i]);
+				color.push_back(1.0);
+				color.push_back(1.0);
+				color.push_back(0.0);
+				color.push_back(0.0);
+
+			}
+
+			minX = increment * modelObject.minX;
+			maxX = increment * modelObject.maxX;
+			minY = increment * modelObject.minY;
+			maxY = increment * modelObject.maxY;
+			minZ = increment * modelObject.minZ;
+			maxZ = increment * modelObject.maxZ;
+
+			glGenVertexArrays(1, &vertexVAO);
+    	    glBindVertexArray(vertexVAO);
+
+        	glGenBuffers(1, &vertexVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+        	glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(float), vertex.data(), GL_STATIC_DRAW);
+        	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
+	        glEnableVertexAttribArray(0);
+
+        	glGenBuffers(1, &colorVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+        	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(float), color.data(), GL_STATIC_DRAW);
+       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (GLvoid*)0);
+     	   	glEnableVertexAttribArray(1);
+
+        	glBindVertexArray(0);
+
+		}
+
+
+		void displaySimBox() {
+
+			glBindVertexArray(vertexVAO);
+			glDrawArrays(GL_LINES, 0, 2);
+			glDrawArrays(GL_LINES, 2, 2);
+			glDrawArrays(GL_LINES, 4, 2);
+			glDrawArrays(GL_LINES, 6, 2);
+			glDrawArrays(GL_LINES, 8, 2);
+			glDrawArrays(GL_LINES, 10, 2);
+			glDrawArrays(GL_LINES, 12, 2);
+			glDrawArrays(GL_LINES, 14, 2);
+			glDrawArrays(GL_LINES, 16, 2);
+			glDrawArrays(GL_LINES, 18, 2);
+			glDrawArrays(GL_LINES, 20, 2);
+			glDrawArrays(GL_LINES, 22, 2);
+			glBindVertexArray(0);						
+
+		}
+
+};
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 	glViewport(0, 0, width, height);
@@ -452,43 +513,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    if (firstMouse) {
-        lastMouseX = xpos;
-        lastMouseY = ypos;
-        firstMouse = false;
-    }
+void processInput(GLFWwindow* window, glm::vec3& cameraPos, glm::vec3& cameraFront, glm::vec3& cameraRight, glm::vec3& cameraUp, float& cameraYaw, float& cameraPitch) {
 
-    float xOffset = xpos - lastMouseX;
-    float yOffset = lastMouseY - ypos; // Reversed since y-coordinates range from bottom to top
-
-    lastMouseX = xpos;
-    lastMouseY = ypos;
-
-    float sensitivity = 0.1f;
-    xOffset *= sensitivity;
-    yOffset *= sensitivity;
-
-    cameraYaw += xOffset;
-    cameraPitch += yOffset;
-
-    // Constrain the pitch to prevent camera flipping
-    if (cameraPitch > 89.0f)
-        cameraPitch = 89.0f;
-    if (cameraPitch < -89.0f)
-        cameraPitch = -89.0f;
-
-    glm::vec3 front;
-    front.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-    front.y = sin(glm::radians(cameraPitch));
-    front.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-    cameraFront = glm::normalize(front);
-}
-
-
-void processInput(GLFWwindow* window) {
-
-		    // Calculate delta time to smooth out camera movement
+	// Calculate delta time to smooth out camera movement
     static float lastFrame = 0.0f;
     float currentFrame = glfwGetTime();
     float deltaTime = currentFrame - lastFrame;
@@ -504,20 +531,76 @@ void processInput(GLFWwindow* window) {
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+
+    // Handle mouse movement
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+
+    // Calculate the change in mouse position
+    double deltaX = mouseX - lastMouseX;
+    double deltaY = lastMouseY - mouseY; // Note the inversion since Y-coordinates increase upwards
+
+    // Update last known mouse position
+    lastMouseX = mouseX;
+    lastMouseY = mouseY;
+
+    // Sensitivity factor for mouse movement
+    float sensitivity = 0.1f;
+
+	    // Check if the mouse button is currently held down
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        
+		if (!mouseButtonPressed) {
+
+            // Initialize the last known position to the current position to avoid sudden jumps
+            lastMouseX = mouseX;
+			lastMouseY = mouseY;
+    
+		}
+
+		else {
+		
+			mouseButtonPressed = true;
+	
+			cameraYaw += deltaY * sensitivity;
+    		cameraPitch += deltaX * sensitivity;
+
+	    	// Limit the camera pitch to avoid flipping
+	    	if (cameraPitch > 89.0f)
+    	    	cameraPitch = 89.0f;
+    			if (cameraPitch < -89.0f)
+        		cameraPitch = -89.0f;
+
+    		// Calculate the new front vector
+    		glm::vec3 front;
+    		front.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+    		front.y = sin(glm::radians(cameraPitch));
+    		front.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+    		cameraFront = glm::normalize(front);
+	
+		}
+	}
+	
+	else {
+    
+		mouseButtonPressed = false;
+    
+	}
 	
 }
 
 
-void init(Model& modelObject, Axis& axis, ModelBox& modelBox) {
+void init(Model& modelObject, Axis& axis, ModelBox& modelBox, SimBox& simBox) {
 
 	axis.initAxis();
 	modelObject.initModel();
 	modelBox.initModelBox(modelObject);
+	simBox.initSimBox(modelObject, modelBox);
 
 }
 
 
-void display(Model& modelObject, Axis& axis, ModelBox& modelBox, GLFWwindow* window, GLuint& shaderProgram) {
+void display(Model& modelObject, Axis& axis, ModelBox& modelBox, SimBox& simBox, glm::vec3& cameraPos, glm::vec3& cameraFront, glm::vec3& cameraUp, GLFWwindow* window, GLuint& shaderProgram) {
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -542,8 +625,8 @@ void display(Model& modelObject, Axis& axis, ModelBox& modelBox, GLFWwindow* win
 
 	modelBox.displayModelBox();
 
-	/* std::cout << modelObject.maxX << '\n'; */
-
+	simBox.displaySimBox();
+	
 	glfwSwapBuffers(window);
 
 }
@@ -557,7 +640,10 @@ int main() {
 
 	ModelBox modelBox;
 
+	SimBox simBox;
+
 	modelObject.filename = "Leviathan.obj";
+
 
     if (!glfwInit()) {
     
@@ -592,7 +678,15 @@ int main() {
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	init(modelObject, axis, modelBox);
+	init(modelObject, axis, modelBox, simBox);
+
+	// Define camera properties
+	glm::vec3 cameraPos = glm::vec3(simBox.maxX, simBox.maxY, simBox.maxZ);
+	glm::vec3 cameraFront = glm::vec3(-simBox.maxX, -simBox.maxY, -simBox.maxZ);
+	glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
+	glm::vec3 cameraRight = glm::vec3(0.0f);
+	float cameraYaw = -0.0f;   // Initialized to face along negative z-axis
+	float cameraPitch = 0.0f;   // Initialized to zero
 
     GLuint vertexShader, fragmentShader;
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -617,13 +711,12 @@ int main() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-	    glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	 while (!glfwWindowShouldClose(window)) {
 
-        processInput(window); // Handle camera movement
-		display(modelObject, axis, modelBox, window, shaderProgram);
+        processInput(window, cameraPos, cameraFront, cameraRight, cameraUp, cameraYaw, cameraPitch); // Handle camera movement
+		display(modelObject, axis, modelBox, simBox, cameraPos, cameraFront, cameraUp, window, shaderProgram);
         glfwPollEvents();
 
     }
