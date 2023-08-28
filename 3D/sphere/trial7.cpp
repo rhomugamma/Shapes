@@ -67,17 +67,17 @@ class Sphere {
 
 			    double stackAngle = M_PI / 2 - i * M_PI / stacks;
     			double xy = radius * cos(stackAngle);
-    			double z = coordinatesZ + (radius * sin(stackAngle));
+    			double z = (radius * sin(stackAngle));
 
     			for (int j = 0; j <= sectors; ++j) {
 
 			        double sectorAngle = j * 2 * M_PI / sectors;
-        			GLfloat x = coordinatesX + (xy * cos(sectorAngle));
-        			GLfloat y = coordinatesY + (xy * sin(sectorAngle));
+        			GLfloat x = (xy * cos(sectorAngle));
+        			GLfloat y = (xy * sin(sectorAngle));
 
-        			vertexData[count++] = x;
-        			vertexData[count++] = y;
-        			vertexData[count++] = z;
+        			vertexData[count++] = x + coordinatesX;
+        			vertexData[count++] = y + coordinatesY;
+        			vertexData[count++] = z + coordinatesZ;
 
     			}
 
@@ -128,24 +128,45 @@ class Sphere {
 			deltaTime = totalTime - frameTime;
 			frameTime = totalTime;
 
-			coordinatesX = (coordinatesX) + (velocityX * deltaTime) + ((1/2) * (accelerationX) * (deltaTime * deltaTime));	
-			coordinatesY = (coordinatesY) + (velocityY * deltaTime) + ((1/2) * (accelerationY) * (deltaTime * deltaTime));
-			coordinatesZ = (coordinatesZ) + (velocityZ * deltaTime) + ((1/2) * (accelerationZ) * (deltaTime * deltaTime));
-
 			velocityX += accelerationX * deltaTime;
 			velocityY += accelerationY * deltaTime;
 			velocityZ += accelerationZ * deltaTime;
 
+			coordinatesX = (coordinatesX) + (velocityX * deltaTime) + ((0.5) * (accelerationX) * (deltaTime * deltaTime));	
+			coordinatesY = (coordinatesY) + (velocityY * deltaTime) + ((0.5) * (accelerationY) * (deltaTime * deltaTime));
+			coordinatesZ = (coordinatesZ) + (velocityZ * deltaTime) + ((0.5) * (accelerationZ) * (deltaTime * deltaTime));
+
+			int count = 0;
+		
+			for (int i = 0; i <= stacks; i++) {
+
+			    double stackAngle = M_PI / 2 - i * M_PI / stacks;
+    			double xy = radius * cos(stackAngle);
+    			double z = (radius * sin(stackAngle));
+
+    			for (int j = 0; j <= sectors; ++j) {
+
+			        double sectorAngle = j * 2 * M_PI / sectors;
+        			GLfloat x = (xy * cos(sectorAngle));
+        			GLfloat y = (xy * sin(sectorAngle));
+
+        			vertexData[count++] = x + coordinatesX;
+        			vertexData[count++] = y + coordinatesY;
+        			vertexData[count++] = z + coordinatesZ;
+
+    			}
+
+			}
+
+			// Update vertex buffer data
+    		glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+    		glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
+    		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		
 		}
 
-
-		void display(glm::mat4 model, GLuint& shaderProgram) {
-
-			// Update model matrix to rotate and translate sphere
-   			model = glm::mat4(1.0f);
-   			model = glm::translate(model, glm::vec3(coordinatesX, coordinatesY, coordinatesZ)); // Translate
-   			model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(1.0f, 0.3f, 0.5f)); // Rotate
-
+		void display(GLuint& shaderProgram) {
+	
 			// Draw the sphere
     		glBindVertexArray(vertexVAO);
     		
@@ -166,6 +187,83 @@ class Sphere {
     		glDeleteVertexArrays(1, &vertexVAO);
     		glDeleteBuffers(1, &vertexVBO);
     		glDeleteBuffers(1, &vertexEBO);
+
+		}
+
+};
+
+
+class Axis {
+
+	public:
+
+		float mass = 1000000000;
+
+		GLfloat verticesAxis[18] = {
+
+			  0.0,  0.0,  0.0,
+			 10.0,  0.0,  0.0,
+
+			  0.0,  0.0,  0.0,
+			  0.0, 10.0,  0.0,
+
+			  0.0,  0.0,  0.0,
+			  0.0,  0.0, 10.0
+
+		};
+
+		GLfloat colorAxis[24] {
+
+			1.0f, 0.0f, 0.0f, 1.0f,
+			1.0f, 0.0f, 0.0f, 1.0f,
+
+			0.0f, 1.0f, 0.0f, 1.0f,
+			0.0f, 1.0f, 0.0f, 1.0f,
+
+			0.0f, 0.0f, 1.0f, 1.0f,
+			0.0f, 0.0f, 1.0f, 1.0f
+
+		};
+
+		GLuint VAO, vertexVBO, colorVBO;
+
+
+		void init() {
+
+			glGenVertexArrays(1, &VAO);
+    	    glBindVertexArray(VAO);
+
+        	glGenBuffers(1, &vertexVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+        	glBufferData(GL_ARRAY_BUFFER, sizeof(verticesAxis), verticesAxis, GL_STATIC_DRAW);
+        	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	        glEnableVertexAttribArray(0);
+
+        	glGenBuffers(1, &colorVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+        	glBufferData(GL_ARRAY_BUFFER, sizeof(colorAxis), colorAxis, GL_STATIC_DRAW);
+       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
+     	   	glEnableVertexAttribArray(1);
+
+        	glBindVertexArray(0);
+
+		}
+
+
+		void display() {
+
+			glBindVertexArray(VAO);
+			glDrawArrays(GL_LINES, 0, 2);
+			glDrawArrays(GL_LINES, 2, 2);
+			glDrawArrays(GL_LINES, 4, 2);
+			glBindVertexArray(0);
+
+		}
+
+
+		void cleanUp() {
+
+			glDeleteVertexArrays(1, &VAO);
 
 		}
 
@@ -234,7 +332,7 @@ void processInput(GLFWwindow* window, glm::vec3& cameraPos, glm::vec3& cameraFro
 	    	// Limit the camera pitch to avoid flipping
 	    	if (cameraPitch > 89.0f)
     	    	cameraPitch = 89.0f;
-    			if (cameraPitch < -89.0f)
+    		if (cameraPitch < -89.0f)
         		cameraPitch = -89.0f;
 
     		// Calculate the new front vector
@@ -256,7 +354,9 @@ void processInput(GLFWwindow* window, glm::vec3& cameraPos, glm::vec3& cameraFro
 }
 
 
-void init(std::vector<Sphere>& sphereObjects, GLuint& shaderProgram) {
+void init(std::vector<Sphere>& sphereObjects, Axis& axis, GLuint& shaderProgram) {
+
+	axis.init();
 
 	for (int i = 0; i < numberObjects; i++) {
 
@@ -281,32 +381,40 @@ void init(std::vector<Sphere>& sphereObjects, GLuint& shaderProgram) {
 }
 
 
-void display(std::vector<Sphere>& sphereObjects, GLFWwindow* window, GLuint shaderProgram) {
+void display(std::vector<Sphere>& sphereObjects, Axis& axis, GLFWwindow* window, GLuint shaderProgram) {
 	
  	// Clear the screen
    	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				// Set up matrices for transformation
+	// Set up matrices for transformation
+
 	glm::mat4 model = glm::mat4(1.0f);
 	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
-					// Get uniform locations
-			GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
-			GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
-			GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+	// Update model matrix to rotate and translate sphere
+   	/* model = glm::mat4(1.0f); */
+   	/* model = glm::translate(model, glm::vec3(coordinatesX, coordinatesY, coordinatesZ)); // Translate */
+   	/* model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0, 0.0, 0.0)); // Rotate */
 
-			// Set uniform matrices
-   			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-   			glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-   			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	// Get uniform locations
+	GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+	GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+	GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+
+	// Set uniform matrices
+   	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+   	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+   	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
 	for (int i = 0; i < sphereObjects.size(); i++) {
 
-		sphereObjects[i].display(model, shaderProgram);
+		sphereObjects[i].display(shaderProgram);
 
 	}
+
+	axis.display();
 
 	// Swap buffers and poll events
    	glfwSwapBuffers(window);
@@ -314,9 +422,28 @@ void display(std::vector<Sphere>& sphereObjects, GLFWwindow* window, GLuint shad
 }
 
 
+void cleanUp(std::vector<Sphere>& sphereObjects, Axis& axis, GLuint& shaderProgram, GLuint& fragmentShader, GLuint& vertexShader) {
+
+	for (int i = 0; i < sphereObjects.size(); i++) {
+
+		sphereObjects[i].cleanUp();
+
+	}
+
+	axis.cleanUp();
+
+    glDeleteProgram(shaderProgram);
+    glDeleteShader(fragmentShader);
+    glDeleteShader(vertexShader);
+
+}
+
+
 int main() {
 
 	std::vector<Sphere> sphereObjects;
+
+	Axis axis;
 	 
     // Initialize GLFW
 	if (!glfwInit()) {
@@ -380,28 +507,28 @@ int main() {
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	init(sphereObjects, axis, shaderProgram);
 
-	init(sphereObjects, shaderProgram);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// Rendering loop
 	while (!glfwWindowShouldClose(window)) {
  
-		 processInput(window, cameraPos, cameraFront, cameraRight, cameraUp, cameraYaw, cameraPitch); // Handle camera movement
+		processInput(window, cameraPos, cameraFront, cameraRight, cameraUp, cameraYaw, cameraPitch); // Handle camera movement
 
 		for (int i = 0; i < sphereObjects.size(); i++) {
 
 			sphereObjects[i].update();
 
 		}
-		display(sphereObjects, window, shaderProgram);
+
+		display(sphereObjects, axis, window, shaderProgram);
+		
     	glfwPollEvents();
 
 	}
 
-    glDeleteProgram(shaderProgram);
-    glDeleteShader(fragmentShader);
-    glDeleteShader(vertexShader);
+	cleanUp(sphereObjects, axis, shaderProgram, fragmentShader, vertexShader);
 
     glfwTerminate();
     return 0;
