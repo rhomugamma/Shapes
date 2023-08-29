@@ -22,13 +22,14 @@ bool mouseButtonPressed = false;
 const char* vertexShaderSource = R"(
     #version 450 core
     layout(location = 0) in vec3 aPos;
+	layout(location = 1) in vec3 color;
     uniform mat4 model;
     uniform mat4 view;
     uniform mat4 projection;
     out vec3 FragPos;
     void main()
     {
-        FragPos = aPos;
+        FragPos = color;
         gl_Position = projection * view * model * vec4(aPos, 1.0);
     }
 )";
@@ -40,9 +41,248 @@ const char* fragmentShaderSource = R"(
     out vec4 FragColor;
     void main()
     {
-        FragColor = vec4(normalize(FragPos), 1.0);
+        /* FragColor = vec4(normalize(FragPos), 1.0); */
+		FragColor = vec4(FragPos, 1.0);
     }
 )";
+
+
+class ModelBox {
+
+	public:
+
+		std::vector<float> vertex;
+		std::vector<float> color;
+		float minX = -5.0;
+		float maxX = 5.0;
+		float minY = -5.0;
+		float maxY = 5.0;
+		float minZ = -5.0;
+		float maxZ = 5.0;
+		float e = 1.0;
+		float mass = 10000000;
+
+
+		GLuint VAO, vertexVBO, colorVAO, colorVBO;
+
+		void init() {
+
+			vertex.push_back(minX);
+			vertex.push_back(minY);
+			vertex.push_back(minZ);
+
+			vertex.push_back(minX);
+			vertex.push_back(maxY);
+			vertex.push_back(minZ);
+			
+			vertex.push_back(minX);
+			vertex.push_back(maxY);
+			vertex.push_back(minZ);
+			
+			vertex.push_back(maxX);
+			vertex.push_back(maxY);
+			vertex.push_back(minZ);
+			
+			vertex.push_back(maxX);
+			vertex.push_back(maxY);
+			vertex.push_back(minZ);
+
+			vertex.push_back(maxX);
+			vertex.push_back(minY);
+			vertex.push_back(minZ);
+
+			vertex.push_back(maxX);
+			vertex.push_back(minY);
+			vertex.push_back(minZ);
+
+			vertex.push_back(minX);
+			vertex.push_back(minY);
+			vertex.push_back(minZ);
+
+
+			vertex.push_back(minX);
+			vertex.push_back(minY);
+			vertex.push_back(maxZ);
+
+			vertex.push_back(minX);
+			vertex.push_back(maxY);
+			vertex.push_back(maxZ);
+			
+			vertex.push_back(minX);
+			vertex.push_back(maxY);
+			vertex.push_back(maxZ);
+			
+			vertex.push_back(maxX);
+			vertex.push_back(maxY);
+			vertex.push_back(maxZ);
+			
+			vertex.push_back(maxX);
+			vertex.push_back(maxY);
+			vertex.push_back(maxZ);
+
+			vertex.push_back(maxX);
+			vertex.push_back(minY);
+			vertex.push_back(maxZ);
+
+			vertex.push_back(maxX);
+			vertex.push_back(minY);
+			vertex.push_back(maxZ);
+
+			vertex.push_back(minX);
+			vertex.push_back(minY);
+			vertex.push_back(maxZ);
+
+
+			vertex.push_back(minX);
+			vertex.push_back(minY);
+			vertex.push_back(minZ);
+
+			vertex.push_back(minX);
+			vertex.push_back(minY);
+			vertex.push_back(maxZ);
+			
+			vertex.push_back(minX);
+			vertex.push_back(maxY);
+			vertex.push_back(minZ);
+			
+			vertex.push_back(minX);
+			vertex.push_back(maxY);
+			vertex.push_back(maxZ);
+			
+			vertex.push_back(maxX);
+			vertex.push_back(maxY);
+			vertex.push_back(minZ);
+
+			vertex.push_back(maxX);
+			vertex.push_back(maxY);
+			vertex.push_back(maxZ);
+
+			vertex.push_back(maxX);
+			vertex.push_back(minY);
+			vertex.push_back(minZ);
+
+			vertex.push_back(maxX);
+			vertex.push_back(minY);
+			vertex.push_back(maxZ);
+
+			for (int i = 0; i < vertex.size(); i++) {
+
+				color.push_back(1.0);
+				color.push_back(0.6);
+				color.push_back(0.1);
+
+			}
+
+			glGenVertexArrays(1, &VAO);
+    	    glBindVertexArray(VAO);
+
+        	glGenBuffers(1, &vertexVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+        	glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(float), vertex.data(), GL_STATIC_DRAW);
+        	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
+	        glEnableVertexAttribArray(0);
+
+        	glGenBuffers(1, &colorVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+        	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(float), color.data(), GL_STATIC_DRAW);
+       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (GLvoid*)0);
+     	   	glEnableVertexAttribArray(1);
+
+        	glBindVertexArray(0);
+
+		}
+
+
+		void display() {
+
+			glBindVertexArray(VAO);
+			glDrawArrays(GL_LINES, 0, 2);
+			glDrawArrays(GL_LINES, 2, 2);
+			glDrawArrays(GL_LINES, 4, 2);
+			glDrawArrays(GL_LINES, 6, 2);
+			glDrawArrays(GL_LINES, 8, 2);
+			glDrawArrays(GL_LINES, 10, 2);
+			glDrawArrays(GL_LINES, 12, 2);
+			glDrawArrays(GL_LINES, 14, 2);
+			glDrawArrays(GL_LINES, 16, 2);
+			glDrawArrays(GL_LINES, 18, 2);
+			glDrawArrays(GL_LINES, 20, 2);
+			glDrawArrays(GL_LINES, 22, 2);
+			glBindVertexArray(0);
+
+		}
+
+};
+
+
+class SimBox {
+
+	public:
+
+		std::vector<float> vertex;
+		std::vector<float> color;
+		int increment = 3;
+		GLuint vertexVAO, vertexVBO, colorVAO, colorVBO;
+		float minX, maxX, minY, maxY, minZ, maxZ;
+
+		void init(ModelBox& modelBox) {
+
+			for (int i = 0; i < modelBox.vertex.size(); i++) {
+
+				vertex.push_back(increment * modelBox.vertex[i]);
+				color.push_back(1.0);
+				color.push_back(1.0);
+				color.push_back(0.0);
+
+			}
+
+			minX = increment * modelBox.minX;
+			maxX = increment * modelBox.maxX;
+			minY = increment * modelBox.minY;
+			maxY = increment * modelBox.maxY;
+			minZ = increment * modelBox.minZ;
+			maxZ = increment * modelBox.maxZ;
+
+			glGenVertexArrays(1, &vertexVAO);
+    	    glBindVertexArray(vertexVAO);
+
+        	glGenBuffers(1, &vertexVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+        	glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(float), vertex.data(), GL_STATIC_DRAW);
+        	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
+	        glEnableVertexAttribArray(0);
+
+        	glGenBuffers(1, &colorVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+        	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(float), color.data(), GL_STATIC_DRAW);
+       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (GLvoid*)0);
+     	   	glEnableVertexAttribArray(1);
+
+        	glBindVertexArray(0);
+
+		}
+
+
+		void display() {
+
+			glBindVertexArray(vertexVAO);
+			glDrawArrays(GL_LINES, 0, 2);
+			glDrawArrays(GL_LINES, 2, 2);
+			glDrawArrays(GL_LINES, 4, 2);
+			glDrawArrays(GL_LINES, 6, 2);
+			glDrawArrays(GL_LINES, 8, 2);
+			glDrawArrays(GL_LINES, 10, 2);
+			glDrawArrays(GL_LINES, 12, 2);
+			glDrawArrays(GL_LINES, 14, 2);
+			glDrawArrays(GL_LINES, 16, 2);
+			glDrawArrays(GL_LINES, 18, 2);
+			glDrawArrays(GL_LINES, 20, 2);
+			glDrawArrays(GL_LINES, 22, 2);
+			glBindVertexArray(0);
+
+		}
+
+};
 
 
 class Sphere {
@@ -51,12 +291,15 @@ class Sphere {
 
 
 		GLfloat vertexData[(stacks + 1) * (sectors + 1) * 3];
+		std::vector<GLfloat> color;
 		GLuint indexData[stacks][sectors * 2 + 2];
-    	GLuint vertexVAO, vertexVBO, vertexEBO;  	  // Create VAO, VBO, and EBO
+    	GLuint vertexVAO, vertexVBO, vertexEBO, colorVAO, colorVBO;  	  // Create VAO, VBO, and EBO
 		float coordinatesX, coordinatesY, coordinatesZ;
 		float velocityX, velocityY, velocityZ;		
 		float accelerationX, accelerationY, accelerationZ;
 		float deltaTime = 0.0, frameTime = 0.00;
+		float mass;
+		float e;
 
 
 		void init(GLuint& shaderProgram) {
@@ -78,6 +321,10 @@ class Sphere {
         			vertexData[count++] = x + coordinatesX;
         			vertexData[count++] = y + coordinatesY;
         			vertexData[count++] = z + coordinatesZ;
+
+					color.push_back(1.0);
+					color.push_back(0.0);
+					color.push_back(0.0);
 
     			}
 
@@ -102,19 +349,23 @@ class Sphere {
 			}
 
     		glGenVertexArrays(1, &vertexVAO);
-    		glGenBuffers(1, &vertexVBO);
     		glGenBuffers(1, &vertexEBO);
 
     		glBindVertexArray(vertexVAO);
 
+    		glGenBuffers(1, &vertexVBO);
     		glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
     		glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
-
     		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexEBO);
     		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexData), indexData, GL_STATIC_DRAW);
-
     		glEnableVertexAttribArray(0);
     		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+
+			glGenBuffers(1, &colorVBO);
+        	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+        	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(float), color.data(), GL_STATIC_DRAW);
+       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
+     	   	glEnableVertexAttribArray(1);
 
     		glBindBuffer(GL_ARRAY_BUFFER, 0);
     		glBindVertexArray(0);		
@@ -122,7 +373,31 @@ class Sphere {
 		}
 
 
-		void update() {
+		void borderCollision(ModelBox& modelBox) {
+
+			if (coordinatesX + radius > modelBox.maxX || coordinatesX - radius < modelBox.minX) {
+
+				velocityX =	((velocityX) * ((mass) - (modelBox.mass * modelBox.e))) / (mass + modelBox.mass);
+
+			}
+					
+			if (coordinatesY + radius > modelBox.maxY || coordinatesY - radius < modelBox.minY) {
+
+				velocityY =	((velocityY) * ((mass) - (modelBox.mass * modelBox.e))) / (mass + modelBox.mass);
+
+			}
+
+			else if (coordinatesZ + radius > modelBox.maxZ || coordinatesZ - radius < modelBox.minZ) {
+
+				velocityZ =	((velocityZ) * ((mass) - (modelBox.mass * modelBox.e))) / (mass + modelBox.mass);
+
+			}
+
+		}
+
+
+
+		void update(ModelBox& modelBox) {
 
 			GLfloat totalTime = glfwGetTime();
 			deltaTime = totalTime - frameTime;
@@ -158,6 +433,8 @@ class Sphere {
 
 			}
 
+			borderCollision(modelBox);
+
 			// Update vertex buffer data
     		glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
     		glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
@@ -178,8 +455,7 @@ class Sphere {
     		
 			glBindVertexArray(0);
 
-		}
-
+		}	
 
 		void cleanUp() {
 
@@ -212,16 +488,16 @@ class Axis {
 
 		};
 
-		GLfloat colorAxis[24] {
+		GLfloat colorAxis[18] {
 
-			1.0f, 0.0f, 0.0f, 1.0f,
-			1.0f, 0.0f, 0.0f, 1.0f,
+			1.0f, 0.0f, 0.0f,
+			1.0f, 0.0f, 0.0f,
 
-			0.0f, 1.0f, 0.0f, 1.0f,
-			0.0f, 1.0f, 0.0f, 1.0f,
+			0.0f, 1.0f, 0.0f,
+			0.0f, 1.0f, 0.0f,
 
-			0.0f, 0.0f, 1.0f, 1.0f,
-			0.0f, 0.0f, 1.0f, 1.0f
+			0.0f, 0.0f, 1.0f,
+			0.0f, 0.0f, 1.0f
 
 		};
 
@@ -242,7 +518,7 @@ class Axis {
         	glGenBuffers(1, &colorVBO);
         	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
         	glBufferData(GL_ARRAY_BUFFER, sizeof(colorAxis), colorAxis, GL_STATIC_DRAW);
-       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
+       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
      	   	glEnableVertexAttribArray(1);
 
         	glBindVertexArray(0);
@@ -354,9 +630,11 @@ void processInput(GLFWwindow* window, glm::vec3& cameraPos, glm::vec3& cameraFro
 }
 
 
-void init(std::vector<Sphere>& sphereObjects, Axis& axis, GLuint& shaderProgram) {
+void init(std::vector<Sphere>& sphereObjects, Axis& axis, ModelBox& modelBox, SimBox& simBox, GLuint& shaderProgram) {
 
 	axis.init();
+
+	float position = -4.5;
 
 	for (int i = 0; i < numberObjects; i++) {
 
@@ -364,24 +642,33 @@ void init(std::vector<Sphere>& sphereObjects, Axis& axis, GLuint& shaderProgram)
 		
 		sphereObjects[i].coordinatesX = 0.0;
 		sphereObjects[i].coordinatesY = 0.0;
-		sphereObjects[i].coordinatesZ = 0.0;
+		sphereObjects[i].coordinatesZ = position;
 
-		sphereObjects[i].velocityX = 0.1;
-		sphereObjects[i].velocityY = 0.0;
-		sphereObjects[i].velocityZ = 0.0;
+		sphereObjects[i].velocityX = 0.8;
+		sphereObjects[i].velocityY = 1.3;
+		sphereObjects[i].velocityZ = 0.6;
 
 		sphereObjects[i].accelerationX = 0.0;
 		sphereObjects[i].accelerationY = 0.0;
 		sphereObjects[i].accelerationZ = 0.0;
 
+		sphereObjects[i].mass = 0.05;
+		sphereObjects[i].e = 1.0;
+
+		position += 0.75;
+
 		sphereObjects[i].init(shaderProgram);
 	
 	}
 
+	modelBox.init();
+
+	simBox.init(modelBox);
+
 }
 
 
-void display(std::vector<Sphere>& sphereObjects, Axis& axis, GLFWwindow* window, GLuint shaderProgram) {
+void display(std::vector<Sphere>& sphereObjects, Axis& axis, ModelBox& modelBox, SimBox& simBox, GLFWwindow* window, GLuint shaderProgram, glm::vec3& cameraPos, glm::vec3& cameraFront, glm::vec3& cameraUp) {
 	
  	// Clear the screen
    	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -390,13 +677,8 @@ void display(std::vector<Sphere>& sphereObjects, Axis& axis, GLFWwindow* window,
 	// Set up matrices for transformation
 
 	glm::mat4 model = glm::mat4(1.0f);
-	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-
-	// Update model matrix to rotate and translate sphere
-   	/* model = glm::mat4(1.0f); */
-   	/* model = glm::translate(model, glm::vec3(coordinatesX, coordinatesY, coordinatesZ)); // Translate */
-   	/* model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0, 0.0, 0.0)); // Rotate */
 
 	// Get uniform locations
 	GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
@@ -415,6 +697,10 @@ void display(std::vector<Sphere>& sphereObjects, Axis& axis, GLFWwindow* window,
 	}
 
 	axis.display();
+
+	modelBox.display();
+
+	simBox.display();
 
 	// Swap buffers and poll events
    	glfwSwapBuffers(window);
@@ -444,6 +730,10 @@ int main() {
 	std::vector<Sphere> sphereObjects;
 
 	Axis axis;
+
+	ModelBox modelBox;
+
+	SimBox simBox;
 	 
     // Initialize GLFW
 	if (!glfwInit()) {
@@ -479,14 +769,6 @@ int main() {
 	glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	// Define camera properties
-	glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 0.0);
-	glm::vec3 cameraFront = glm::vec3(0.0, 0.0, 0.0);
-	glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
-	glm::vec3 cameraRight = glm::vec3(0.0f);
-	float cameraYaw = -0.0f;   // Initialized to face along negative z-axis
-	float cameraPitch = 0.0f;   // Initialized to zero
-
     // Create and compile the vertex shader
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
@@ -507,9 +789,19 @@ int main() {
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	init(sphereObjects, axis, shaderProgram);
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+
+	init(sphereObjects, axis, modelBox, simBox, shaderProgram);
+
+	// Define camera properties
+	glm::vec3 cameraPos = glm::vec3(simBox.maxX, simBox.maxY, simBox.maxZ);
+	glm::vec3 cameraFront = glm::vec3(-simBox.maxX, -simBox.maxY, -simBox.maxZ);
+	glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
+	glm::vec3 cameraRight = glm::vec3(0.0f);
+	float cameraYaw = -0.0f;   // Initialized to face along negative z-axis
+	float cameraPitch = 0.0f;   // Initialized to zero
 
 	// Rendering loop
 	while (!glfwWindowShouldClose(window)) {
@@ -518,11 +810,11 @@ int main() {
 
 		for (int i = 0; i < sphereObjects.size(); i++) {
 
-			sphereObjects[i].update();
+			sphereObjects[i].update(modelBox);
 
 		}
 
-		display(sphereObjects, axis, window, shaderProgram);
+		display(sphereObjects, axis, modelBox, simBox, window, shaderProgram, cameraPos, cameraFront, cameraUp);
 		
     	glfwPollEvents();
 
