@@ -11,8 +11,7 @@
 // Define sphere vertices
 const int sectors = 36;
 const int stacks = 18;
-const float radius = 0.25;
-const int numberObjects = 10;
+const int numberObjects = 50;
 double lastMouseX = 0.0; // Initial X position of the mouse (center of the window)
 double lastMouseY = 0.0; // Initial Y position of the mouse (center of the window)
 bool mouseButtonPressed = false;
@@ -185,7 +184,7 @@ class ModelBox {
         	glGenBuffers(1, &colorVBO);
         	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
         	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(float), color.data(), GL_STATIC_DRAW);
-       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (GLvoid*)0);
+       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
      	   	glEnableVertexAttribArray(1);
 
         	glBindVertexArray(0);
@@ -255,7 +254,7 @@ class SimBox {
         	glGenBuffers(1, &colorVBO);
         	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
         	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(float), color.data(), GL_STATIC_DRAW);
-       		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (GLvoid*)0);
+       		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
      	   	glEnableVertexAttribArray(1);
 
         	glBindVertexArray(0);
@@ -294,12 +293,14 @@ class Sphere {
 		std::vector<GLfloat> color;
 		GLuint indexData[stacks][sectors * 2 + 2];
     	GLuint vertexVAO, vertexVBO, vertexEBO, colorVAO, colorVBO;  	  // Create VAO, VBO, and EBO
+		float radius;
 		float coordinatesX, coordinatesY, coordinatesZ;
 		float velocityX, velocityY, velocityZ;		
 		float accelerationX, accelerationY, accelerationZ;
 		float deltaTime = 0.0, frameTime = 0.00;
 		float mass;
 		float e;
+		float V_c;
 
 
 		void init(GLuint& shaderProgram) {
@@ -395,9 +396,63 @@ class Sphere {
 
 		}
 
+		void objectCollision(std::vector<Sphere>& sphereObjects) {
+			
+			for (int i = 0; i < sphereObjects.size(); i++) {
+
+				for (int j = i + 1; j < sphereObjects.size(); j++) {
+
+					float dx = sphereObjects[j].coordinatesX - sphereObjects[i].coordinatesX - (sphereObjects[j].radius - sphereObjects[i].radius);
+					float dy = sphereObjects[j].coordinatesY - sphereObjects[i].coordinatesY - (sphereObjects[j].radius - sphereObjects[i].radius);
+					float dz = sphereObjects[j].coordinatesZ - sphereObjects[i].coordinatesZ - (sphereObjects[j].radius - sphereObjects[i].radius);
+					float distance = sqrt((dx * dx) + (dy * dy) + (dz * dz));
+
+					float limit = sphereObjects[i].radius + sphereObjects[j].radius;
+
+					if (distance <= limit) {
+
+							/* float velX = objects[i].velocityX; */
+
+							/* velocityX = ((objects[i].mass * objects[i].velocityX) + (objects[j].mass * objects[j].velocityX) - (objects[j].mass * objects[i].e * (objects[i].velocityX - objects[j].velocityX))) / (objects[i].mass + objects[j].mass); */
+							/* objects[j].velocityX = ((objects[i].mass * velX) + (objects[j].mass * objects[j].velocityX) + (objects[i].mass * objects[j].e * (velX - objects[j].velocityX))) / (objects[i].mass + objects[j].mass); */
+
+						float normalX = dx / distance;
+			            float normalY = dy / distance;
+			            float normalZ = dz / distance;
+
+                		float relativeVelocityX = sphereObjects[j].velocityX - sphereObjects[i].velocityX;
+               		 	float relativeVelocityY = sphereObjects[j].velocityY - sphereObjects[i].velocityY;
+               		 	float relativeVelocityZ = sphereObjects[j].velocityZ - sphereObjects[i].velocityZ;
+                		float dotProduct = (relativeVelocityX * normalX) + (relativeVelocityY * normalY) + (relativeVelocityZ * normalZ);
+
+	           		    sphereObjects[i].velocityX += normalX * dotProduct;
+    	           		sphereObjects[i].velocityY += normalY * dotProduct;
+    	           		sphereObjects[i].velocityZ += normalZ * dotProduct;
+
+        	       		sphereObjects[j].velocityX -= normalX * dotProduct;
+            	   		sphereObjects[j].velocityY -= normalY * dotProduct;
+	           	   		sphereObjects[j].velocityZ -= normalZ * dotProduct;
+
+						/* float impulse = ((1 + sphereObjects[i].e) * dotProduct) / (sphereObjects[i].mass + sphereObjects[j].mass); */
+
+	          		    /* sphereObjects[i].velocityX -= (impulse * sphereObjects[i].mass * normalX) * V_c; */
+    	           		/* sphereObjects[i].velocityY -= (impulse * sphereObjects[i].mass * normalY) * V_c; */
+    	           		/* sphereObjects[i].velocityZ -= (impulse * sphereObjects[i].mass * normalZ) * V_c; */
+
+        	       		/* sphereObjects[j].velocityX += (impulse * sphereObjects[i].mass * normalX) * V_c; */
+            	   		/* sphereObjects[j].velocityY += (impulse * sphereObjects[i].mass * normalY) * V_c; */ 
+	           	   		/* sphereObjects[j].velocityZ += (impulse * sphereObjects[i].mass * normalZ) * V_c; */
 
 
-		void update(ModelBox& modelBox) {
+					}	
+
+				}
+
+			}
+
+		}
+
+		void update(std::vector<Sphere>& sphereObjects, ModelBox& modelBox) {
 
 			GLfloat totalTime = glfwGetTime();
 			deltaTime = totalTime - frameTime;
@@ -434,6 +489,8 @@ class Sphere {
 			}
 
 			borderCollision(modelBox);
+
+			objectCollision(sphereObjects);
 
 			// Update vertex buffer data
     		glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
@@ -639,6 +696,8 @@ void init(std::vector<Sphere>& sphereObjects, Axis& axis, ModelBox& modelBox, Si
 	for (int i = 0; i < numberObjects; i++) {
 
 		sphereObjects.push_back(Sphere());
+
+		sphereObjects[i].radius = 0.1;
 		
 		sphereObjects[i].coordinatesX = 0.0;
 		sphereObjects[i].coordinatesY = 0.0;
@@ -654,16 +713,30 @@ void init(std::vector<Sphere>& sphereObjects, Axis& axis, ModelBox& modelBox, Si
 
 		sphereObjects[i].mass = 0.05;
 		sphereObjects[i].e = 1.0;
+		sphereObjects[i].V_c = 1.0;
 
-		position += 0.75;
+		position += 0.15;
 
 		sphereObjects[i].init(shaderProgram);
+
+		/* std::cout << "hi" << i << '\n'; */
 	
 	}
 
 	modelBox.init();
 
 	simBox.init(modelBox);
+
+}
+
+
+void update(std::vector<Sphere>& sphereObjects, ModelBox& modelBox) {
+
+	for (int i = 0; i < sphereObjects.size(); i++) {
+
+		sphereObjects[i].update(sphereObjects, modelBox);
+
+	}
 
 }
 
@@ -694,6 +767,8 @@ void display(std::vector<Sphere>& sphereObjects, Axis& axis, ModelBox& modelBox,
 
 		sphereObjects[i].display(shaderProgram);
 
+		/* std::cout << "hi" << i << '\n'; */
+ 
 	}
 
 	axis.display();
@@ -808,11 +883,7 @@ int main() {
  
 		processInput(window, cameraPos, cameraFront, cameraRight, cameraUp, cameraYaw, cameraPitch); // Handle camera movement
 
-		for (int i = 0; i < sphereObjects.size(); i++) {
-
-			sphereObjects[i].update(modelBox);
-
-		}
+		update(sphereObjects, modelBox);
 
 		display(sphereObjects, axis, modelBox, simBox, window, shaderProgram, cameraPos, cameraFront, cameraUp);
 		
@@ -823,6 +894,7 @@ int main() {
 	cleanUp(sphereObjects, axis, shaderProgram, fragmentShader, vertexShader);
 
     glfwTerminate();
+	
     return 0;
 
 }
